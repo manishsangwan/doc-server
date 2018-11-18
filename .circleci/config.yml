@@ -6,7 +6,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci:node-8.11-aws
+      - image: manishsangwan/circleci:node-8.11-aws
         auth:
           username: $DOCKER_USER
           password: $DOCKER_PASS
