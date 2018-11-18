@@ -37,10 +37,9 @@ jobs:
 
             # If master, cut a production release
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              yarn create-release -n
 
               # Update the docker tag to the new app version
-              DOCKER_TAG=$(yarn -s output-version)
+              DOCKER_TAG=$RANDOM
             fi
 
             # Save reference to docker tag; the deploy script needs this
