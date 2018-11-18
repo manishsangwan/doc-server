@@ -6,8 +6,10 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/node:8.9.1
-
+      - image: upkeep/circleci:node-8.11-aws
+        auth:
+          username: $DOCKER_USER
+          password: $DOCKER_PASS
     working_directory: ~/server
 
     steps:
@@ -20,12 +22,31 @@ jobs:
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
 
-      - run: npm install
+      - run: yarn install
 
       - save_cache:
           paths:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
 
+      - run:
+          name: Tag and cut release
+          command: |
+            # Default to staging
+            DOCKER_TAG=staging
 
+            # If master, cut a production release
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              yarn create-release -n
+
+              # Update the docker tag to the new app version
+              DOCKER_TAG=$(yarn -s output-version)
+            fi
+
+            # Save reference to docker tag; the deploy script needs this
+            echo export DOCKER_TAG=$DOCKER_TAG >> $BASH_ENV
+            echo export DOCKER_IMAGE=manishsangwan/$CIRCLE_PROJECT_REPONAME:$DOCKER_TAG >> $BASH_ENV
       - setup_remote_docker
+      - run: docker build -t $DOCKER_IMAGE .
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run: docker push $DOCKER_IMAGE
